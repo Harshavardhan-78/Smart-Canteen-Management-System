@@ -1,5 +1,6 @@
 import streamlit as st
 import pickle
+from pathlib import Path
 from utils.processor import (
     encode_inputs,
     generate_historical_insights,
@@ -11,7 +12,11 @@ st.title("🤖 Demand Predictor")
 
 @st.cache_resource
 def load_model():
-    with open("models/rf_classifier.pkl", "rb") as f:
+    # Get absolute path to project root
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    MODEL_PATH = BASE_DIR / "models" / "rf_classifier.pkl"
+
+    with open(MODEL_PATH, "rb") as f:
         return pickle.load(f)
 
 model = load_model()
