@@ -54,35 +54,67 @@ if mode == "📂 Upload Historical CSV":
 # MODE 2 — DAILY JOURNAL ENTRY
 # =====================================
 else:
-
     st.subheader("Enter Daily Sales Journal")
 
-    with st.form("daily_entry_form"):
+    from datetime import datetime
+
+    # Initialize session storage
+    if "daily_items" not in st.session_state:
+        st.session_state.daily_items = []
+
+    # Step 1: Select Day Context (Once)
+    st.markdown("### 📅 Day Details")
+
+    date = st.date_input("Date", value=datetime.today())
+    weather = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy"])
+    exams = st.selectbox("Exam Schedule", ["None", "Midterms", "Finals"])
+    region = st.selectbox("Region", ["Urban", "Rural"])
+
+    st.markdown("---")
+    st.markdown("### ➕ Add Items")
+
+    # Step 2: Add Items Form
+    with st.form("add_item_form"):
 
         item = st.text_input("Item Name")
         quantity = st.number_input("Quantity Sold", min_value=0)
-        weather = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy"])
-        exams = st.selectbox("Exam Schedule", ["None", "Midterms", "Finals"])
-        region = st.selectbox("Region", ["Urban", "Rural"])
         time_slot = st.selectbox(
             "Time Slot",
             ["Morning", "Afternoon", "Evening", "Night"]
         )
-        date = st.date_input("Date", value=datetime.today())
 
-        submit = st.form_submit_button("Save Daily Entry")
+        add_item = st.form_submit_button("Add Item")
 
-        if submit:
+        if add_item:
+            st.session_state.daily_items.append({
+                "item": item,
+                "quantity": quantity,
+                "time_slot": time_slot
+            })
+            st.success(f"{item} added!")
 
+    # Show added items
+    if st.session_state.daily_items:
+        st.markdown("### 📋 Items Added Today")
+        for i, entry in enumerate(st.session_state.daily_items):
+            st.write(f"{i+1}. {entry['item']} - {entry['quantity']} ({entry['time_slot']})")
+
+    # Step 3: Final Save Button
+    if st.button("✅ End Day & Save to Database"):
+
+        for entry in st.session_state.daily_items:
             db.sales.insert_one({
                 "owner_id": st.session_state["owner_id"],
-                "item": item,
-                "quantity": int(quantity),
+                "item": entry["item"],
+                "quantity": int(entry["quantity"]),
                 "weather": weather,
                 "exams": exams,
                 "region": region,
-                "time_slot": time_slot,
+                "time_slot": entry["time_slot"],
                 "date": datetime.combine(date, datetime.min.time())
             })
 
-            st.success("Daily journal entry saved!")
+        st.success("🎉 All items saved successfully!")
+
+        # Clear session state
+        st.session_state.daily_items = []
